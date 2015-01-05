@@ -1,0 +1,6 @@
+Header
+2 Bytes - Identifier
+2 Bytes - Image width
+2 Bytes - Image height
+1 Byte - number of colors in palette
+3 Bytes - Per color: RGB

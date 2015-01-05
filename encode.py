@@ -1,49 +1,88 @@
 #!/usr/bin/python3
 
 from PIL import Image
+import struct
 import sys
+import math
 
 
 def stripalpha(img):
+    pixel_array = img.load()
     new_img = img.convert('RGB')
     for y in range(img.size[1]):
         for x in range(img.size[0]):
-            color = list(img.getpixel((x, y)))
+            color = list(pixel_array[x, y])
             new_color = []
             for i in range(3):
                 # new_color.append(int(color[i] + (255 - color[i]) * (255 - color[3]) / 255))
-                new_color.append(int(255 + color[3]*(color[0] / 255 - 1)))
+                new_color.append(int(255 + color[3]*(color[i] / 255 - 1)))
             if new_color != color[:3]:
-                new_img.putpixel((x, y), tuple(new_color))
-                # putpixel is kinda slow so I also tried using a bytestring with the pixel data to read it all
-                # into the image at once. It took almost exactly the same amount to time to run.
+                pixel_array[x, y] = tuple(new_color)
 
     return new_img
 
 
 def _genheader(img):
     #Header reserves the first 6 bytes
-    header = bin(0xfade)  # file type identifier. Probably not in use already... I didn't check
-    header += format(img.size[0], '016b')
-    header += format(img.size[1], '016b')
+    header = b'\x69\x67'  # file type identifier. 'ig' ascii encoding
+
+    header += struct.pack('>H', img.size[0])  # Format to unsigned short: 2 bytes
+    header += struct.pack('>H', img.size[1])
     return header
 
 
-def encode(in_file, quality=15):
+def _genpalette(palette):
+    # Format: ((r, g, b), count)
+
+    data = struct.pack('>B', len(palette))
+    for color, count in palette:
+        for c in color:
+            data += struct.pack('>B', c)
+
+    return data
+
+
+def encode(in_file, quality=4):
     orig_img = Image.open(in_file)
     if orig_img.mode == 'RGBA':
         # Bake alpha layer into RGB
         orig_img = stripalpha(orig_img)
     encoded_img = Image.new('RGB', orig_img.size)
 
-    header = _genheader(encoded_img)
-    
-    # [quality value] colors. Each color is encoded by 6 bytes (RRGGBB).
+    # 16-256 colors (4-8 bits correspond to quality 0-4) Each color is encoded by 6 bytes (RRGGBB).
+    color_map = {}
+    scan_quality = quality
+    while len(color_map) < 2**(quality+4) and scan_quality < 5:
+        color_map = {}
+        pix_array_orig = orig_img.load()
+        for y in range(orig_img.size[1]):
+            for x in range(orig_img.size[0]):
+                pixel = tuple(min(c // (100-math.floor(scan_quality**3))
+                              * (100-math.floor(scan_quality**3))
+                              + (100-math.floor(scan_quality**3)) // 3, 255)
+                              for c in pix_array_orig[x, y])
+                try:
+                    color_map[pixel] += 1
+                except KeyError:
+                    color_map[pixel] = 1
+        scan_quality += 1
+        if scan_quality == 5:  # past 5, the quality gets worse
+            scan_quality = 4.3  # Magic numbers are fun! It's close to, but not quite, 100**(1/3)
+
+    # Format: ((r, g, b), count)
+    color_priority = sorted(color_map.items(), key=lambda item: item[1],
+                            reverse=True)[:2**(quality+4)-1]
+
+    b_header = _genheader(encoded_img)
+    b_palette = _genpalette(color_priority)
+
+    with open('out.ig', 'wb') as f:
+        f.write(b_header + b_palette)
 
 
 def main():
     if len(sys.argv) < 2:
-        print('Usage: ./Encode [file] [quality 0-15]')
+        print('Usage: ./Encode [file] [quality 0-4]')
         return
     if len(sys.argv) < 3:
         encode(sys.argv[1])
