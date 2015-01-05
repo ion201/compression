@@ -21,17 +21,29 @@ def stripalpha(img):
     return new_img
 
 
-def encode(in_file, quality=7):
+def _genheader(img):
+    #Header reserves the first 6 bytes
+    header = bin(0xfade)  # file type identifier. Probably not in use already... I didn't check
+    header += format(img.size[0], '016b')
+    header += format(img.size[1], '016b')
+    return header
+
+
+def encode(in_file, quality=15):
     orig_img = Image.open(in_file)
     if orig_img.mode == 'RGBA':
         # Bake alpha layer into RGB
         orig_img = stripalpha(orig_img)
     encoded_img = Image.new('RGB', orig_img.size)
 
+    header = _genheader(encoded_img)
+    
+    # [quality value] colors. Each color is encoded by 6 bytes (RRGGBB).
+
 
 def main():
     if len(sys.argv) < 2:
-        print('Usage: ./Encode [file] [quality 0-9]')
+        print('Usage: ./Encode [file] [quality 0-15]')
         return
     if len(sys.argv) < 3:
         encode(sys.argv[1])
