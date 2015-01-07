@@ -1,7 +1,8 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-build/
+*.so
+c_modules/build/
 
 # Pycharm
 .idea/
