@@ -15,27 +15,16 @@ static PyObject *ProcessPixels_organize(PyObject *self, PyObject *args)
 {
     // https://docs.python.org/3/c-api/concrete.html#sequence-objects
 
-    //Args: organize(int quality, PyListObject pixels)
-    //What this file needs to do:
-    //1. Accept a list of pixels in the format: [(r1, r2, ...), (g1, g2, ...), (b1, b2, ...)]
-    //2. Iterate through the list. For every number, do this operation (in c of course)
-    //   pixel = tuple(min(pixel_data[band][i] // (100-math.floor(scan_quality**3))
-    //                 * (100-math.floor(scan_quality**3))
-    //                 + (100-math.floor(scan_quality**3)) // 3, 255)
-    //                 for band in range(3))
-    //3. Return a dictionary for every calculated pixel and it's count
-    //   This requires buidling the Python Dict while iterating
-    //   or
-    //3. Return a list of the top x pixels. Discard counts. (This sounds easier!)
-    //   Don't build the PyObject until iteration is done
+    // Args: organize(int quality, PyListObject pixels)
 
-    int quality;
+    // VS2010 sucks
     PyObject *pixelData;    //PyListObject
-    PyObject *band_r;       //PyTupleObject
+    PyObject *band_r;       //PyListObject
     PyObject *band_g;
     PyObject *band_b;
     PyObject *pixelsDict;   //PyDictObject
-    PyObject *pixelTmp;     //PyTubpleObject
+    PyObject *pixelTmp;     //PyTupleObject
+    int quality;
     int i, countTmp;
     int r, g, b;
 
@@ -71,7 +60,7 @@ static PyObject *ProcessPixels_organize(PyObject *self, PyObject *args)
 
 static PyMethodDef ProcessPixelsMethods[] = {
     {"organize", ProcessPixels_organize, METH_VARARGS,
-    "organize(quality, pixels)\nAccepts a list of pixels [[R, R...], [G, G...], [B, B...]] and returns a dict with the count for each"},
+    "organize(quality, band_data)\nAccepts a list of pixels [[R, R...], [G, G...], [B, B...]] and returns a dict with the count for each"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef ProcessPixelsModule = {
