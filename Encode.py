@@ -3,6 +3,7 @@
 from PIL import Image
 import struct
 import sys
+import time
 
 
 import ProcessPixels
