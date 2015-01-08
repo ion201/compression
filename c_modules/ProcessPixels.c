@@ -58,9 +58,54 @@ static PyObject *ProcessPixels_organize(PyObject *self, PyObject *args)
     return pixelsDict;
 }
 
+static PyObject *ProcessPixels_stripalpha(PyObject *self, PyObject *args)
+{
+    PyObject *byteData = NULL;
+    PyObject *bandData;
+    PyObject *band_r;
+    PyObject *band_g;
+    PyObject *band_b;
+    PyObject *band_a;
+//    unsigned char pixelColor[4] = "000";
+    unsigned char *byteDataArray;
+    int a;
+    int i, j;
+    int arrayIndex = 0;
+
+    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &bandData)){
+        return NULL;
+    }
+
+    band_r = PyList_GetItem(bandData, 0);
+    band_g = PyList_GetItem(bandData, 1);
+    band_b = PyList_GetItem(bandData, 2);
+    band_a = PyList_GetItem(bandData, 3);
+
+    byteDataArray = malloc(sizeof(char) * (PyList_Size(band_r) * 3 + 1)); //
+    byteDataArray[PyList_Size(band_r) * 3] = '\x00';
+
+    for (i = 0; i < PyList_Size(band_r); i++){
+        a = (int) PyLong_AsLong(PyList_GetItem(band_a, i));
+        byteDataArray[arrayIndex] = (unsigned char) (255 + a * (PyLong_AsLong(PyList_GetItem(band_r, i)) / 255.0 - 1));
+        byteDataArray[arrayIndex+1] = (unsigned char) (255 + a * (PyLong_AsLong(PyList_GetItem(band_g, i)) / 255.0 - 1));
+        byteDataArray[arrayIndex+2] = (unsigned char) (255 + a * (PyLong_AsLong(PyList_GetItem(band_b, i)) / 255.0 - 1));
+        for (j = 0; j < 3; j++){
+            if (byteDataArray[arrayIndex+j] == 0)  //Don't want a \x00 in the middle of my null-terminated string
+                byteDataArray[arrayIndex+j] = 1;
+        }
+        arrayIndex += 3;
+    }
+
+    byteData = PyBytes_FromString(byteDataArray);
+    free(byteDataArray);
+
+    return byteData;
+}
+
 static PyMethodDef ProcessPixelsMethods[] = {
     {"organize", ProcessPixels_organize, METH_VARARGS,
     "organize(quality, band_data)\nAccepts a list of pixels [[R, R...], [G, G...], [B, B...]] and returns a dict with the count for each"},
+    {"stripalpha", ProcessPixels_stripalpha, METH_VARARGS, "stripalpha(band_data)"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef ProcessPixelsModule = {

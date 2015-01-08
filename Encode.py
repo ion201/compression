@@ -9,18 +9,11 @@ import ProcessPixels
 
 
 def stripalpha(img):
-    # This a convience function for ProcessPixels.stripalpha()
-    pixel_array = img.load()
-    new_img = img.convert('RGB')
-    for y in range(img.size[1]):
-        for x in range(img.size[0]):
-            color = list(pixel_array[x, y])
-            new_color = []
-            if color[3] > 245:
-                continue
-            for i in range(3):
-                new_color.append(int(255 + color[3]*(color[i] / 255 - 1)))
-            pixel_array[x, y] = tuple(new_color)
+    band_data = []
+    for i in range(4):
+        band_data.append(list(img.getdata(i)))
+
+    new_img = Image.frombytes('RGB', img.size, ProcessPixels.stripalpha(band_data))
 
     return new_img
 
