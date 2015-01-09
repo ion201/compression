@@ -2,7 +2,6 @@ import struct
 
 
 class ByteFields:
-    """Allows for bit manipulation in a byte"""
     def __init__(self, value=0):
         self._d = value
         self._index = -1
@@ -21,7 +20,13 @@ class ByteFields:
             self._index = index
 
     def __str__(self):
-        return bin(self._d)
+        s = ''
+        tmp = self._d
+        for i in range(self._index+1):
+            s = str(tmp & 1) + s
+            tmp >>= 1
+
+        return s
 
     def __int__(self):
         return self._d
@@ -29,19 +34,38 @@ class ByteFields:
     def __len__(self):
         return self._index + 1
 
+    def clear(self):
+        self._d = 0
+        self._index = -1
+
     def append(self, value, bits):
-        for i in range(bits):
+        bits -= 1
+        while bits >= 0:
             self._d <<= 1
-            self._d += value >> i & 1
+            self._d += value >> bits & 1
             self._index += 1
+            bits -= 1
+
+    def hasbits(self, number):
+        if self._index >= number-1:
+            return True
+        return False
+
+    def hasbyte(self):
+        if self._index >= 7:
+            return True
+        return False
+
+    def popbits(self, number):
+        while self._index < (number - 1):
+            number -= 1
+
+        popped_byte = self._d >> self._index - number + 1
+        self._d ^= popped_byte << self._index - number + 1
+
+        self._index -= number
+
+        return popped_byte
 
     def popbyte(self):
-        if self._index < 7:
-            return None
-
-        popped_byte = self._d >> self._index - 8
-        self._d ^= popped_byte << self._index - 8
-
-        self._index -= 8
-
-        return struct.pack('>B', popped_byte)
+        return struct.pack('>B', self.popbits(8))
