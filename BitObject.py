@@ -1,7 +1,7 @@
 import struct
 
 
-class ByteFields:
+class ByteField:
     def __init__(self, value=0):
         self._d = value
         self._index = -1
