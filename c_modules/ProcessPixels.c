@@ -102,10 +102,41 @@ static PyObject *ProcessPixels_stripalpha(PyObject *self, PyObject *args)
     return byteData;
 }
 
+static PyObject *ProcessPixels_getnearestindex(PyObject *self, PyObject *args)
+{
+    PyObject *palette;
+    PyObject *color;
+    PyObject *tmpTup;
+    int result, lowest, tmpSum, i, j, c1, c2;
+
+    if (!PyArg_ParseTuple(args, "O!O!", &PyTuple_Type, &palette, &PyTuple_Type, &color))
+        return NULL;
+
+    // ((c[1][0] - pixel_c[0]) ** 2 + (c[1][1] - pixel_c[1]) ** 2 + (c[1][2] - pixel_c[2]) ** 2) ** (1 / 2))
+    lowest = 9999999;  // That's probably high enough
+    for(i = 0; i < PyTuple_Size(palette); i++){
+        tmpTup = PyTuple_GetItem(palette, i);
+        tmpSum = 0;
+        for (j = 0; j < 3; j++){
+            c1 = (int) PyLong_AsLong(PyTuple_GetItem(PyTuple_GetItem(tmpTup, 1), j));
+            c2 = (int) PyLong_AsLong(PyTuple_GetItem(color, j));
+            tmpSum += (c2-c1)*(c2-c1);
+        }
+        if (tmpSum < lowest){
+            result = PyLong_AsLong(PyTuple_GetItem(tmpTup, 0));
+            lowest = tmpSum;
+        }
+    }
+
+    return Py_BuildValue("i", result);
+}
+
 static PyMethodDef ProcessPixelsMethods[] = {
     {"organize", ProcessPixels_organize, METH_VARARGS,
     "organize(quality, band_data)\nAccepts a list of pixels [[R, R...], [G, G...], [B, B...]] and returns a dict with the count for each"},
     {"stripalpha", ProcessPixels_stripalpha, METH_VARARGS, "stripalpha(band_data)"},
+    {"getnearestindex", ProcessPixels_getnearestindex, METH_VARARGS,
+    "getnearestindex(palette, color)\npalette = ((0, (r, g, b)), (1, (r, g, b), ...))"},
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef ProcessPixelsModule = {

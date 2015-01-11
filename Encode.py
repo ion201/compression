@@ -3,7 +3,7 @@
 from PIL import Image
 import struct
 import sys
-from BitObject import ByteField
+from BitObjects import ByteField
 
 
 import ProcessPixels
@@ -17,14 +17,6 @@ def stripalpha(img):
     new_img = Image.frombytes('RGB', img.size, ProcessPixels.stripalpha(band_data))
 
     return new_img
-
-
-def getproximity(c1, c2):
-    result = 0
-    for i in range(3):
-        result += (c1[i] - c2[i])**2
-
-    return result**(1/2)
 
 
 def _genheader(img):
@@ -51,23 +43,56 @@ def _genbody(img, palette, quality):
     color_array = img.load()
     bf = ByteField()
 
-    b = b''
+    img_bytes = b''
 
-    for y in range(img.size[1]):
-        for x in range(img.size[0]):
-            pixel_c = color_array[x, y]
-            prox = []
-            for i, palette_c in palette:
-                prox.append((getproximity(pixel_c, palette_c), palette_c, i))
-            prox.sort(key=lambda c: c[0])
-            bf.append(prox[0][2], quality + 4)
+    done = False
+    x, y = 0, 0
+    y_old = 0
+    while not done:
+        c = color_array[x, y]
+        index = ProcessPixels.getnearestindex(palette, c)
 
-        tmp = b''
-        while bf.hasbyte():
-            tmp += bf.popbyte()
-        b += tmp
+        # Check for at least 4 consecutive colors
+        count = 1
+        index_next = 0
+        while count < 255:
+            x += 1
+            count += 1
+            if x >= img.size[0]:
+                x, y = 0, y+1
+            if y >= img.size[1]:
+                done = True
+                break
+            c_next = color_array[x, y]
+            index_next = ProcessPixels.getnearestindex(palette, c_next)
+            if index_next != index:
+                break
 
-    return b
+        if count < 4:
+            while count != 0:
+                bf.append(index, quality + 4)
+                count -= 1
+
+        else:
+            bf.append(2**(quality+4) - 1, 8)  # 0b1...11
+            bf.append(count, 8)
+            bf.append(index, quality + 4)
+
+        bf.append(index_next, quality + 4)
+
+        if y_old != y:
+            y_old = y
+            tmp = b''
+            while bf.hasbyte():
+                tmp += bf.popbyte()
+            img_bytes += tmp
+
+    tmp = b''
+    while bf.hasbits(1):
+        tmp += bf.popbyte()
+    img_bytes += tmp
+
+    return img_bytes
 
 
 def encode(in_file, quality=4):
@@ -83,7 +108,7 @@ def encode(in_file, quality=4):
 
     # Format: ((r, g, b), count)
     color_priority = [x[0] for x in sorted(color_map.items(), key=lambda item: item[1],
-                      reverse=True)[:2**(quality+4)-3]]  # values 1..11 and 1..10 are reserved for compression
+                      reverse=True)[:2**(quality+4)-2]]  # values 1..11 and 1..10 are reserved for compression
     palette = tuple(enumerate(color_priority))
     # Possible optimizations at this point (will probably move into c again for speed):
     # 0xf..ff will be folloed by 5 bits indicating how many times the next color should be repeated (inclusive)

@@ -5,3 +5,4 @@ Header
 1 Byte - number of colors in palette
 3 Bytes * n colors - Per color: RGB
 x bits * n pixels - x is the quality level (4-8 bits)
+    - 1...11 indicates block. Next 8 bits indicate length for the next color to repeat (inclusive)
