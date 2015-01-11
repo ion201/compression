@@ -38,13 +38,13 @@ class ByteFields:
         self._d = 0
         self._index = -1
 
-    def append(self, value, bits):
-        bits -= 1
-        while bits >= 0:
-            self._d <<= 1
-            self._d += value >> bits & 1
-            self._index += 1
-            bits -= 1
+    def append(self, value, bits=8):
+        if type(value) == bytes:
+            value = ord(value)
+
+        self._d <<= bits
+        self._d += value
+        self._index += bits
 
     def hasbits(self, number):
         if self._index >= number-1:
