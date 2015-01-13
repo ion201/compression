@@ -19,12 +19,13 @@ def stripalpha(img):
     return new_img
 
 
-def _genheader(img):
+def _genheader(img, quality):
     # Header reserves the first 6 bytes
     header = b'\x69\x67'  # file type identifier. 'ig' ascii encoding
 
     header += struct.pack('>H', img.size[0])  # Format to unsigned short: 2 bytes
     header += struct.pack('>H', img.size[1])
+    header += struct.pack('>B', quality)
     return header
 
 
@@ -35,7 +36,6 @@ def _genpalette(palette):
     for i, color in palette:
         for c in color:
             data += struct.pack('>B', c)
-
     return data
 
 
@@ -53,9 +53,9 @@ def _genbody(img, palette, quality):
         index = ProcessPixels.getnearestindex(palette, c)
 
         # Check for at least 4 consecutive colors
-        count = 1
+        count = 0
         index_next = 0
-        while count < 255:
+        while count < 255:  # Max for repeating single color is 255
             x += 1
             count += 1
             if x >= img.size[0]:
@@ -69,16 +69,16 @@ def _genbody(img, palette, quality):
                 break
 
         if count < 4:
-            while count != 0:
+            while count > 1:
                 bf.append(index, quality + 4)
                 count -= 1
-
         else:
-            bf.append(2**(quality+4) - 1, 8)  # 0b1...11
+            bf.append(2**(quality+4) - 1, quality + 4)  # 0b1...11
             bf.append(count, 8)
             bf.append(index, quality + 4)
 
-        bf.append(index_next, quality + 4)
+        if not done:
+            bf.append(index_next, quality + 4)
 
         if y_old != y:
             y_old = y
@@ -88,7 +88,9 @@ def _genbody(img, palette, quality):
             img_bytes += tmp
 
     tmp = b''
-    while bf.hasbits(1):
+    while int(bf) != 0:
+        while not bf.hasbyte():
+            bf.append(0, 1)
         tmp += bf.popbyte()
     img_bytes += tmp
 
@@ -115,7 +117,7 @@ def encode(in_file, quality=4):
     # and 1 bit to indicate vertical or horizontal
     # 0xf..fe followed by 2 - 4 bit blocks indicating LxW pixel block to fill
 
-    b_header = _genheader(orig_img)
+    b_header = _genheader(orig_img, quality)
     b_palette = _genpalette(palette)
     b_body = _genbody(orig_img, palette, quality)
 

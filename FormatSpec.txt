@@ -2,6 +2,7 @@ Header
 2 Bytes - Identifier (ascii - 'ig')
 2 Bytes - Image width
 2 Bytes - Image height
+1 Byte - Encoding quality
 1 Byte - number of colors in palette
 3 Bytes * n colors - Per color: RGB
 x bits * n pixels - x is the quality level (4-8 bits)
