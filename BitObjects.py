@@ -62,7 +62,6 @@ class ByteField:
 
         return self._d >> self._index - number + 1
 
-
     def popbits(self, number):
         while self._index < (number - 1):
             number -= 1

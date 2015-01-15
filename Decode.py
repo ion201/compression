@@ -68,10 +68,7 @@ def main():
     if len(sys.argv) < 2:
         print('Usage: ./Decode [file]]')
         return
-    if len(sys.argv) < 3:
-        decode(sys.argv[1])
-    else:
-        decode(sys.argv[1])
+    decode(sys.argv[1])
 
 
 if __name__ == '__main__':
