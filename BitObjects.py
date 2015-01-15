@@ -56,16 +56,23 @@ class ByteField:
             return True
         return False
 
+    def peekbits(self, number):
+        while self._index < (number - 1):
+            number -= 1
+
+        return self._d >> self._index - number + 1
+
+
     def popbits(self, number):
         while self._index < (number - 1):
             number -= 1
 
-        popped_byte = self._d >> self._index - number + 1
-        self._d ^= popped_byte << self._index - number + 1
+        popped_bits = self._d >> self._index - number + 1
+        self._d ^= popped_bits << self._index - number + 1
 
         self._index -= number
 
-        return popped_byte
+        return popped_bits
 
     def popbyte(self):
         return struct.pack('>B', self.popbits(8))

@@ -4,9 +4,17 @@ from PIL import Image
 import struct
 import sys
 from BitObjects import ByteField
+from os import path
 
 
 import ProcessPixels
+
+
+def advancexy(x, y, max_x):
+    x += 1
+    if x >= max_x:
+        x, y = 0, y+1
+    return x, y
 
 
 def stripalpha(img):
@@ -45,28 +53,25 @@ def _genbody(img, palette, quality):
 
     img_bytes = b''
 
-    done = False
-    x, y = -1, 0
+    x, y = 0, 0  # x, y should always point to the next unchecked pixel
     y_old = 0
-    while not done:
-        x += 1
-        if x >= img.size[0]:
-            x, y = 0, y+1
-        c = color_array[x, y]
-        index = ProcessPixels.getnearestindex(palette, c)
+    index_prev = -1
+    while y < img.size[1]:
+
+        if index_prev != -1:  # First loop
+            index = index_prev
+        else:
+            index = ProcessPixels.getnearestindex(palette, color_array[x, y])
+            x, y = advancexy(x, y, img.size[0])
 
         # Check for at least 4 consecutive colors
         count = 1
-        index_next = 0
-        while count < 255:  # Max for repeating single color is 255
-            x += 1
-            if x >= img.size[0]:
-                x, y = 0, y+1
-            if y >= img.size[1]:
-                done = True
-                break
+        index_next = -1
+        while count < 255 and y < img.size[1]:  # Max for repeating single color is 255
             c_next = color_array[x, y]
             index_next = ProcessPixels.getnearestindex(palette, c_next)
+            x, y = advancexy(x, y, img.size[0])
+
             if index_next != index:
                 break
             count += 1
@@ -80,8 +85,7 @@ def _genbody(img, palette, quality):
             bf.append(count, 8)
             bf.append(index, quality + 4)
 
-        if not done:
-            bf.append(index_next, quality + 4)
+        index_prev = index_next  # For use next round
 
         if y_old != y:
             y_old = y
@@ -91,7 +95,7 @@ def _genbody(img, palette, quality):
             img_bytes += tmp
 
     tmp = b''
-    while int(bf) != 0:
+    while len(bf) != 0:
         while not bf.hasbyte():
             bf.append(0, 1)
         tmp += bf.popbyte()
@@ -124,7 +128,8 @@ def encode(in_file, quality=4):
     b_palette = _genpalette(palette)
     b_body = _genbody(orig_img, palette, quality)
 
-    with open('out.ig', 'wb') as f:
+    out_file = path.splitext(path.basename(in_file))[0] + '.ig'
+    with open(out_file, 'wb') as f:
         f.write(b_header)
         f.write(b_palette)
         f.write(b_body)

@@ -41,10 +41,9 @@ def decode(filename):
             b = bf.popbits(quality + 4)
             if b == 2**(quality + 4) - 1:
                 # Repeat the next color n times
-                if not bf.hasbits(quality + 12):
+                while not bf.hasbits(quality + 12):
                     bf.append(struct.unpack_from('>B', data, index+1)[0], 8)
-                    bf.append(struct.unpack_from('>B', data, index+2)[0], quality + 4)
-                    index += 2
+                    index += 1
 
                 n = bf.popbits(8)
                 color_index = bf.popbits(quality + 4)
