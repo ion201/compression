@@ -35,15 +35,15 @@ def decode(filename):
         index += 3
 
     while index < len(data):
-        bf.append(struct.unpack_from('>B', data, index)[0], 8)
+        bf.append(data[index], 8)
         # quality + 4 => BITS_PER_COLOR
         while bf.hasbits(quality + 4) and y < height:
             b = bf.popbits(quality + 4)
             if b == 2**(quality + 4) - 1:
                 # Repeat the next color n times
                 while not bf.hasbits(quality + 12):
-                    bf.append(struct.unpack_from('>B', data, index+1)[0], 8)
                     index += 1
+                    bf.append(data[index], 8)
 
                 n = bf.popbits(8)
                 color_index = bf.popbits(quality + 4)

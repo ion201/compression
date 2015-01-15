@@ -129,6 +129,7 @@ def encode(in_file, quality=4):
     b_body = _genbody(orig_img, palette, quality)
 
     out_file = path.splitext(path.basename(in_file))[0] + '.ig'
+    out_file = 'out.ig'
     with open(out_file, 'wb') as f:
         f.write(b_header)
         f.write(b_palette)
