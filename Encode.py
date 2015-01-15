@@ -46,18 +46,20 @@ def _genbody(img, palette, quality):
     img_bytes = b''
 
     done = False
-    x, y = 0, 0
+    x, y = -1, 0
     y_old = 0
     while not done:
+        x += 1
+        if x >= img.size[0]:
+            x, y = 0, y+1
         c = color_array[x, y]
         index = ProcessPixels.getnearestindex(palette, c)
 
         # Check for at least 4 consecutive colors
-        count = 0
+        count = 1
         index_next = 0
         while count < 255:  # Max for repeating single color is 255
             x += 1
-            count += 1
             if x >= img.size[0]:
                 x, y = 0, y+1
             if y >= img.size[1]:
@@ -67,9 +69,10 @@ def _genbody(img, palette, quality):
             index_next = ProcessPixels.getnearestindex(palette, c_next)
             if index_next != index:
                 break
+            count += 1
 
         if count < 4:
-            while count > 1:
+            while count > 0:
                 bf.append(index, quality + 4)
                 count -= 1
         else:
