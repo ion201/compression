@@ -8,6 +8,8 @@ class ByteField:
         while value != 0:
             value >>= 1
             self._index += 1
+        self.size = self.__len__
+        self.int = self.__int__
 
     def __getitem__(self, index):
         return (self._d >> index) & 1

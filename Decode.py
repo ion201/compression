@@ -2,8 +2,11 @@
 
 import sys
 import struct
-from BitObjects import ByteField
+# from BitObjects import ByteField
+import ByteMethods as bf
 from PIL import Image
+
+# TODO: Optimize to reduce bf.hasbits calls
 
 
 def decode(filename):
@@ -25,7 +28,7 @@ def decode(filename):
 
     index = 8
 
-    bf = ByteField()
+    # bf = ByteField()
 
     palette = []
 

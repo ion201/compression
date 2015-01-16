@@ -51,7 +51,8 @@ def _genbody(img, palette, quality):
     color_array = img.load()
     bf = ByteField()
 
-    img_bytes = b''
+    img_bytes = []
+    # img_bytes = b''
 
     x, y = 0, 0  # x, y should always point to the next unchecked pixel
     y_old = 0
@@ -87,19 +88,20 @@ def _genbody(img, palette, quality):
 
         index_prev = index_next  # For use next round
 
-        if y_old != y:
+        if y != y_old:
             y_old = y
             tmp = b''
-            while bf.hasbyte():
-                tmp += bf.popbyte()
-            img_bytes += tmp
+            while bf.hasbits(8):
+                b = bf.popbits(8)
+                tmp += struct.pack('>B', b)
+            img_bytes.append(tmp)
 
     tmp = b''
     while len(bf) != 0:
-        while not bf.hasbyte():
+        while not bf.hasbits(8):
             bf.append(0, 1)
-        tmp += bf.popbyte()
-    img_bytes += tmp
+        tmp += struct.pack('>B', bf.popbits(8))
+    img_bytes.append(tmp)
 
     return img_bytes
 
@@ -133,7 +135,8 @@ def encode(in_file, quality=4):
     with open(out_file, 'wb') as f:
         f.write(b_header)
         f.write(b_palette)
-        f.write(b_body)
+        for part in b_body:
+            f.write(part)
 
 
 def main():
