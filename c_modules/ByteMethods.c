@@ -1,7 +1,6 @@
 #include <Python.h>
-#include <limits.h>
 
-static unsigned long long value = 0;
+static unsigned long value = 0;
 static int index = -1;
 
 static PyObject *ByteMethods_init(PyObject *self, PyObject *args)
@@ -13,7 +12,7 @@ static PyObject *ByteMethods_init(PyObject *self, PyObject *args)
 
 static PyObject *ByteMethods_int(PyObject *self, PyObject *args)
 {
-    return Py_BuildValue("K", value);
+    return Py_BuildValue("k", value);
 }
 
 static PyObject *ByteMethods_size(PyObject *self, PyObject *args)
