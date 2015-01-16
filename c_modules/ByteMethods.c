@@ -1,5 +1,11 @@
 #include <Python.h>
 
+/* 
+64 bits is not large enough to compete with python ints without overflowing in Encode.py
+so this class is (at least now) only for Decode.py which doesn't require values > 32 bits
+With values <= 16 bits, this file and BitObjects.ByteField() are interchangable.
+*/
+
 static unsigned long value = 0;
 static int index = -1;
 
