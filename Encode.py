@@ -27,6 +27,17 @@ def stripalpha(img):
     return new_img
 
 
+def getpixelindex(lookup_table, palette, color):
+
+    lookup_value = lookup_table[color]
+    try:
+        index = palette.index(lookup_value)
+    except ValueError:  # lookup_value is not in the palette
+        index = ProcessPixels.getnearestindex(palette, color)
+
+    return index
+
+
 def _genheader(img, quality):
     # Header reserves the first 6 bytes
     header = b'\x69\x67'  # file type identifier. 'ig' ascii encoding
@@ -41,13 +52,13 @@ def _genpalette(palette):
     # Format: ((i, (r, g, b)), ...)
 
     data = struct.pack('>B', len(palette))
-    for i, color in palette:
+    for color in palette:
         for c in color:
             data += struct.pack('>B', c)
     return data
 
 
-def _genbody(img, palette, quality):
+def _genbody(img, palette, quality, lookup_table):
     color_array = img.load()
     bf = ByteField()
 
@@ -57,20 +68,20 @@ def _genbody(img, palette, quality):
     x, y = 0, 0  # x, y should always point to the next unchecked pixel
     y_old = 0
     index_prev = -1
+
     while y < img.size[1]:
 
         if index_prev != -1:  # First loop
             index = index_prev
         else:
-            index = ProcessPixels.getnearestindex(palette, color_array[x, y])
+            index = getpixelindex(lookup_table, palette, color_array[x, y])
             x, y = advancexy(x, y, img.size[0])
 
         # Check for at least 4 consecutive colors
         count = 1
         index_next = -1
         while count < 255 and y < img.size[1]:  # Max for repeating single color is 255
-            c_next = color_array[x, y]
-            index_next = ProcessPixels.getnearestindex(palette, c_next)
+            index_next = getpixelindex(lookup_table, palette, color_array[x, y])
             x, y = advancexy(x, y, img.size[0])
 
             if index_next != index:
@@ -115,20 +126,16 @@ def encode(in_file, quality=4):
     band_data = []
     for i in range(3):
         band_data.append(list(orig_img.getdata(i)))
-    color_map = ProcessPixels.organize(quality, band_data)
+    color_map, lookup_table = ProcessPixels.organize(quality, band_data)
 
     # Format: ((r, g, b), count)
     color_priority = [x[0] for x in sorted(color_map.items(), key=lambda item: item[1],
                       reverse=True)[:2**(quality+4)-2]]  # values 1..11 and 1..10 are reserved for compression
-    palette = tuple(enumerate(color_priority))
-    # Possible optimizations at this point (will probably move into c again for speed):
-    # 0xf..ff will be folloed by 5 bits indicating how many times the next color should be repeated (inclusive)
-    # and 1 bit to indicate vertical or horizontal
-    # 0xf..fe followed by 2 - 4 bit blocks indicating LxW pixel block to fill
+    palette = tuple(color_priority)
 
     b_header = _genheader(orig_img, quality)
     b_palette = _genpalette(palette)
-    b_body = _genbody(orig_img, palette, quality)
+    b_body = _genbody(orig_img, palette, quality, lookup_table)
 
     out_file = path.splitext(path.basename(in_file))[0] + '.ig'
     out_file = 'out.ig'

@@ -24,6 +24,7 @@ static PyObject *ProcessPixels_organize(PyObject *self, PyObject *args)
     PyObject *band_b;
     PyObject *pixelsDict;   //PyDictObject
     PyObject *pixelTmp;     //PyTupleObject
+    PyObject *lookupColorTable;  //PyDictObject
     int quality;
     int i, countTmp;
     int r, g, b;
@@ -37,25 +38,28 @@ static PyObject *ProcessPixels_organize(PyObject *self, PyObject *args)
     band_b = PyList_GetItem(pixelData, 2);
 
     pixelsDict = PyDict_New();
-    //pixelTmp = PyTuple_New(3);
+    lookupColorTable = PyDict_New();
+
     for (i = 0; i < PyList_Size(band_r); i++){
         r = binColor(PyList_GetItem(band_r, i), quality);
         g = binColor(PyList_GetItem(band_g, i), quality);
         b = binColor(PyList_GetItem(band_b, i), quality);
         pixelTmp = PyTuple_New(3);
-        PyTuple_SetItem(pixelTmp, 0, Py_BuildValue("i", r));
-        PyTuple_SetItem(pixelTmp, 1, Py_BuildValue("i", g));
-        PyTuple_SetItem(pixelTmp, 2, Py_BuildValue("i", b));
+        pixelTmp = Py_BuildValue("(iii)", r, g, b);
 
-        // if (PyDict_Contains(pixelsDict, pixelTmp) == 1)
+        PyDict_SetItem(lookupColorTable, Py_BuildValue("(OOO)", PyList_GetItem(band_r, i),
+                       PyList_GetItem(band_g, i), PyList_GetItem(band_b, i)), pixelTmp);
+
         if (PyDict_GetItem(pixelsDict, pixelTmp) == NULL){
             countTmp = 1;
         } else{
             countTmp = PyLong_AsLong(PyDict_GetItem(pixelsDict, pixelTmp)) + 1;
         }
         PyDict_SetItem(pixelsDict, pixelTmp, Py_BuildValue("i", countTmp));
+
+//        PyDict_SetItem(Py_BuildValue("(iii)", r, g, b));
     }
-    return pixelsDict;
+    return Py_BuildValue("(OO)", pixelsDict, lookupColorTable);
 }
 
 static PyObject *ProcessPixels_stripalpha(PyObject *self, PyObject *args)
@@ -118,12 +122,13 @@ static PyObject *ProcessPixels_getnearestindex(PyObject *self, PyObject *args)
         tmpTup = PyTuple_GetItem(palette, i);
         tmpSum = 0;
         for (j = 0; j < 3; j++){
-            c1 = (int) PyLong_AsLong(PyTuple_GetItem(PyTuple_GetItem(tmpTup, 1), j));
+            c1 = (int) PyLong_AsLong(PyTuple_GetItem(tmpTup, j));
             c2 = (int) PyLong_AsLong(PyTuple_GetItem(color, j));
             tmpSum += (c2-c1)*(c2-c1);
         }
         if (tmpSum < lowest){
-            result = PyLong_AsLong(PyTuple_GetItem(tmpTup, 0));
+//            result = PyLong_AsLong(PyTuple_GetItem(tmpTup, 0));
+            result = i;
             lowest = tmpSum;
         }
     }
