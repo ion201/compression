@@ -7,12 +7,12 @@ With values <= 16 bits, this file and BitObjects.ByteField() are interchangable.
 */
 
 static unsigned long value = 0;
-static int index = -1;
+static int bit_index = -1;
 
 static PyObject *ByteMethods_init(PyObject *self, PyObject *args)
 {
     value = 0;
-    index = -1;
+    bit_index = -1;
     Py_RETURN_NONE;
 }
 
@@ -23,7 +23,7 @@ static PyObject *ByteMethods_int(PyObject *self, PyObject *args)
 
 static PyObject *ByteMethods_size(PyObject *self, PyObject *args)
 {
-    return Py_BuildValue("i", index+1);
+    return Py_BuildValue("i", bit_index+1);
 }
 
 static PyObject *ByteMethods_append(PyObject *self, PyObject *args)
@@ -35,7 +35,7 @@ static PyObject *ByteMethods_append(PyObject *self, PyObject *args)
 
     value = value << bits;
     value += new_value;
-    index += bits;
+    bit_index += bits;
 
     Py_RETURN_NONE;
 }
@@ -47,7 +47,7 @@ static PyObject *ByteMethods_hasbits(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i", &number))
         return NULL;
 
-    if (index >= number-1)
+    if (bit_index >= number-1)
         return Py_BuildValue("i", 1);
     return Py_BuildValue("i", 0);
 }
@@ -60,13 +60,13 @@ static PyObject *ByteMethods_popbits(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "i", &number))
         return NULL;
 
-    while (index < (number - 1)){
+    while (bit_index < (number - 1)){
         number -= 1;
     }
 
-    result = value >> (index - number + 1);
-    value = value ^ (result << (index - number + 1));
-    index -= number;
+    result = value >> (bit_index - number + 1);
+    value = value ^ (result << (bit_index - number + 1));
+    bit_index -= number;
 
     return Py_BuildValue("k", result);
 }
