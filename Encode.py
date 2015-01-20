@@ -69,7 +69,7 @@ def _genbody(img, palette, quality, lookup_table):
     y_old = 0
     index_prev = -1
 
-    while y < img.size[1]:
+    while y < img.size[1] or x == 0:
 
         if index_prev != -1:  # First loop
             index = index_prev
@@ -79,9 +79,13 @@ def _genbody(img, palette, quality, lookup_table):
 
         # Check for at least 4 consecutive colors
         count = 1
-        index_next = -1
-        while count < 255 and y < img.size[1]:  # Max for repeating single color is 255
-            index_next = getpixelindex(lookup_table, palette, color_array[x, y])
+        index_next = None
+        while count < 255:  # Max for repeating single color is 255
+            if y < img.size[1]:
+                index_next = getpixelindex(lookup_table, palette, color_array[x, y])
+            else:
+                x, y = advancexy(x, y, img.size[0])
+                break
             x, y = advancexy(x, y, img.size[0])
 
             if index_next != index:
