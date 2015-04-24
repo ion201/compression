@@ -11,4 +11,6 @@ Dependencies:
 
 Included c modules must be compiled via setup.py file and moved to project root before running.
 
-This is just a small project I've been working on in my spare time. It's not going to be big and professional like png
+`./Encode [file] [quality 0-4]`
+
+`./Decode [file]`
